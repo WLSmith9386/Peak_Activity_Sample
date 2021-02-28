@@ -13,34 +13,47 @@ public class PlaneManager : MonoBehaviour
 
     private void Awake()
     {
-        areaText.text = "Select a plane to get area.";//set initial text for display
+        //set initial text for display
+        areaText.text = "Select a plane to get area.";
         planeSelectionButtons.SetActive(false);
         cubeManager.gameObject.SetActive(false);
     }
 
     void Update()
     {
-        if (Input.touchCount > 0)
+        if (Input.touchCount < 1)
         {
-            var touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Ended)
-            {
-                Ray cast = Camera.main.ScreenPointToRay(touch.position);
-                if (Physics.Raycast(cast, out RaycastHit hit))
-                {
-                    GetPlaneMeasurements gpm = hit.collider.gameObject.GetComponent<GetPlaneMeasurements>();
+            return;
+        }
 
-                    if (gpm != null)
-                    {
-                        areaText.text = "Calculating area";
-                        gpm.areaText = areaText;
-                        gpm.CalculatePlaneArea(gpm.arPlane);//force it to do an intial calculations.
-                        selectedPlane = gpm.transform;
-                        planeSelectionButtons.SetActive(true);//turn on options
-                        
-                    }
-                }
+        var touch = Input.GetTouch(0);
+
+        if (touch.phase == TouchPhase.Ended)
+        {
+            Ray cast = Camera.main.ScreenPointToRay(touch.position);
+            RaycastHit hit;
+
+            bool castHitObject = (Physics.Raycast(cast, out hit));
+
+            if (!castHitObject)
+            {
+                return;
             }
+            
+            GetPlaneMeasurements gpm = hit.collider.gameObject.GetComponent<GetPlaneMeasurements>();
+
+            if (gpm == null)
+            {
+                return;
+            }
+
+            areaText.text = "Calculating area";
+            gpm.areaText = areaText;
+            //force it to do an intial calculations.
+            gpm.CalculatePlaneArea(gpm.arPlane);
+            selectedPlane = gpm.transform;
+            //turn on options
+            planeSelectionButtons.SetActive(true);
         }
     }
 
@@ -49,10 +62,13 @@ public class PlaneManager : MonoBehaviour
         //after selecting this move onto cube management
         areaText.text = "Let's play with some cubes!";
         planeSelectionButtons.SetActive(false);
-        aRPlaneManager.enabled = false;//stop detecting more planes
+
+        //stop detecting more planes
+        aRPlaneManager.enabled = false;
         ARPlane selectedArPlane = selectedPlane.GetComponent<ARPlane>();
 
-        foreach(ARPlane a in aRPlaneManager.trackables)//remove planes that aren't going to be used to avoid screen clutter
+        //remove planes that aren't going to be used to avoid screen clutter
+        foreach (ARPlane a in aRPlaneManager.trackables)
         {
             if (a != selectedArPlane)
             {
@@ -64,11 +80,14 @@ public class PlaneManager : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    //Used to hide unwanted planes
     public void HidePlane()
     {
         planeSelectionButtons.SetActive(false);
-        selectedPlane.gameObject.SetActive(false);//hide the currently selected plane
-        selectedPlane = null;//remove from selected plane
+        //hide the currently selected plane
+        selectedPlane.gameObject.SetActive(false);
+        //remove from selected plane
+        selectedPlane = null;
         areaText.text = "Select a plane to get area.";
     }
 }

@@ -13,7 +13,8 @@ public class CubeManager : MonoBehaviour
     private bool cubePlaced = false;
     private List<Vector3> pathNodes;
 
-    AnimationClip animClip;//used to create animations for paths
+    //used to create animations for paths
+    AnimationClip animClip;
 
     void Start()
     {
@@ -22,57 +23,75 @@ public class CubeManager : MonoBehaviour
 
     void Update()
     {
-        if (Input.touchCount > 0)
+        if (Input.touchCount < 1)
         {
-            if (EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))//stops GUI from hiding when pressing button over surface space
-            {
-                return;
-            }
+            return;
+        }
 
-            var touch = Input.GetTouch(0);
-            Ray cast = Camera.main.ScreenPointToRay(touch.position);
-            if (Physics.Raycast(cast, out RaycastHit hit))
-            {
-                switch (touch.phase)
+        var touch = Input.GetTouch(0);
+
+        if (EventSystem.current.IsPointerOverGameObject(touch.fingerId))//stops GUI from hiding when pressing button over surface space
+        {
+            return;
+        }
+
+        Ray cast = Camera.main.ScreenPointToRay(touch.position);
+        RaycastHit hit;
+
+        bool castHitObject = (Physics.Raycast(cast, out hit)) ;
+
+        if (!castHitObject)
+        {
+            return;
+        }
+
+        switch (touch.phase)
+        {
+            case TouchPhase.Began:
+
+                if(cubePlaced)
                 {
-                    case TouchPhase.Began:
-
-                        if(cubePlaced)
-                        {
-                            pathNodes = new List<Vector3>();
-                            pathNodes.Add(hit.point);
-                        }
-
-                        break;
-
-                    case TouchPhase.Moved:
-
-                        if (cubePlaced)
-                        {
-                            interactiveCube.transform.position = hit.point;
-                            pathNodes.Add(hit.point);
-                        }
-
-                        break;
-
-                    case TouchPhase.Ended:
-
-                        PlaceCube(hit);//place the cube in it's initial starting point.
-
-                        if (pathNodes.Count <= 1)
-                        {
-                            interactiveCube.transform.position = hit.point;
-                            pathGuiItems.SetActive(false);
-                        }
-                        else
-                        {
-                            pathGuiItems.SetActive(true);
-                            CreateAnimationClip();
-                        }
-
-                        break;
+                    pathNodes = new List<Vector3>();
+                    pathNodes.Add(hit.point);
                 }
-            }
+
+                break;
+
+            case TouchPhase.Moved:
+
+                if (cubePlaced)
+                {
+                    interactiveCube.transform.position = hit.point;
+                    pathNodes.Add(hit.point);
+                }
+
+                break;
+
+            case TouchPhase.Ended:
+
+                if (!cubePlaced)
+                {
+                    //place the cube in it's initial starting point.
+                    PlaceCube(hit);
+                }
+
+                CreateAnimationIfMultipleNodes(hit);
+
+                break;
+            }       
+    }
+
+    private void CreateAnimationIfMultipleNodes(RaycastHit hit)
+    {
+        if (pathNodes.Count <= 1)
+        {
+            interactiveCube.transform.position = hit.point;
+            pathGuiItems.SetActive(false);
+        }
+        else
+        {
+            pathGuiItems.SetActive(true);
+            CreateAnimationClip();
         }
     }
 
@@ -93,6 +112,7 @@ public class CubeManager : MonoBehaviour
 
         animClip.legacy = true;
 
+        //Leaving relative path blank because it is affecting the root transform
         animClip.SetCurve("", typeof(Transform), "localPosition.x", TranslateCubeX);
         animClip.SetCurve("", typeof(Transform), "localPosition.y", TranslateCubeY);
         animClip.SetCurve("", typeof(Transform), "localPosition.z", TranslateCubeZ);
@@ -102,12 +122,9 @@ public class CubeManager : MonoBehaviour
 
     private void PlaceCube(RaycastHit hit)
     {
-        if (!cubePlaced)
-        {
-            interactiveCube.transform.position = hit.point;
-            interactiveCube.SetActive(true);
-            cubePlaced = true;
-        }
+        interactiveCube.transform.position = hit.point;
+        interactiveCube.SetActive(true);
+        cubePlaced = true;
     }
 
     public void StartPath()
